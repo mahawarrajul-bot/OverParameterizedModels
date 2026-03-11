@@ -9,9 +9,6 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 
-############################################
-# Seed for reproducibility
-############################################
 
 def set_seed(seed=42):
 
@@ -30,9 +27,6 @@ set_seed(42)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-############################################
-# Load CIFAR10 raw arrays
-############################################
 
 dataset = torchvision.datasets.CIFAR10(
     root="./data",
@@ -43,9 +37,6 @@ dataset = torchvision.datasets.CIFAR10(
 X = dataset.data
 y = np.array(dataset.targets)
 
-############################################
-# Dataset modification functions
-############################################
 
 def true_labels(X,y):
     return X.copy(), y.copy()
@@ -103,9 +94,7 @@ def gaussian_pixels(X,y):
 
     return X_new, y.copy()
 
-############################################
-# Dataset wrapper (avoids huge RAM usage)
-############################################
+
 
 transform = transforms.Compose([
     transforms.ToPILImage(),
@@ -131,9 +120,7 @@ class CustomDataset(torch.utils.data.Dataset):
         return img, label
 
 
-############################################
-# Model: Inception V3
-############################################
+
 
 def create_model():
 
@@ -148,9 +135,6 @@ def create_model():
     return model.to(device)
 
 
-############################################
-# Training function
-############################################
 
 def train_model(X,y,steps=25000):
 
@@ -209,9 +193,6 @@ def train_model(X,y,steps=25000):
     return losses
 
 
-############################################
-# Run experiments
-############################################
 
 experiments = {
     "true_labels": true_labels,
@@ -235,9 +216,6 @@ for name,func in experiments.items():
     results[name] = losses
 
 
-############################################
-# Plot results
-############################################
 
 plt.figure(figsize=(8,6))
 
