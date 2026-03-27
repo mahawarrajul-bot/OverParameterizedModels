@@ -138,11 +138,11 @@ def load_preprocess_training_batch(batch_id, batch_size):
     # Return the training data in batches of size <batch_size> or less
     return batch_features_labels(tmpFeatures, labels, batch_size)
 
-def randomize_labels(labels, p, seed):
+def randomize_labels(labels, corruptionlevel, seed):
     #with probability p you want to keep the same label and with 1-p you want to uniformaly randomize
     np.random.seed(seed)
     #1-p percentaege of labels corrupted 
     for i in range(len(labels)):
-        if np.random.rand() > p:
+        if np.random.rand() > 1-corruptionlevel:
             labels[i] = np.random.randint(0, 10)
     return labels
