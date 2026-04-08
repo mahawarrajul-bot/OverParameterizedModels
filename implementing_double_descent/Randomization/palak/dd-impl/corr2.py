@@ -4,19 +4,19 @@ import matplotlib.pyplot as plt
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
-from torchvision import datasets
+from torchvision import datasets, models
 from cifar10_utils import randomize_labels
 
 
-class MPL1_512:
-    def __init__(self, input_shape=(32, 32, 3), num_classes=10, learning_rate=0.0005):
+class AlexNetTrainer:
+    def __init__(self, input_shape=(32, 32, 3), num_classes=10, learning_rate=0.0001):
         """
-        Initialize the Multi-Layer Perceptron with 1 hidden layer of 512 units.
+        Initialize AlexNet-based classifier for CIFAR-10.
 
         Args:
             input_shape: Shape of input images (default: (32, 32, 3) for CIFAR-10)
             num_classes: Number of output classes (default: 10)
-            learning_rate: Learning rate for Adam optimizer (default: 0.0005)
+            learning_rate: Learning rate for Adam optimizer (default: 0.0001)
         """
         self.input_shape = input_shape
         self.num_classes = num_classes
@@ -31,20 +31,15 @@ class MPL1_512:
         self._build_model()
 
     def _build_model(self):
-        """Build the neural network architecture."""
-        in_features = int(np.prod(self.input_shape))
+        """Build AlexNet and resize CIFAR inputs to 224x224 inside the model."""
         self.model = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(in_features, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, self.num_classes),
+            nn.Upsample(size=(224, 224), mode="bilinear", align_corners=False),
+            models.alexnet(num_classes=self.num_classes),
         )
         self.model.to(self.device)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        self.optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=self.learning_rate
+        )
 
     def summary(self):
         """Display model architecture summary."""
@@ -106,22 +101,32 @@ class MPL1_512:
         Returns:
             Training history, final test error, and epochs to overfit
         """
-        train_loader = self._build_dataloader(x_train, y_train, batch_size, shuffle=True)
+        train_loader = self._build_dataloader(
+            x_train, y_train, batch_size, shuffle=True
+        )
         test_loader = None
         if x_test is not None and y_test is not None:
-            test_loader = self._build_dataloader(x_test, y_test, batch_size, shuffle=False)
+            test_loader = self._build_dataloader(
+                x_test, y_test, batch_size, shuffle=False
+            )
 
         # Track first overfit landmark while continuing full training
         patience_counter = 0
         epochs_to_overfit = None
 
         # Initialize history tracking for epoch-wise plotting
-        all_history = {"loss": [], "accuracy": [], "test_loss": []}
+        all_history = {
+            "loss": [],
+            "accuracy": [],
+            "test_loss": [],
+            "test_accuracy": [],
+            "test_error": [],
+        }
 
         for epoch in range(epochs):
             self.model.train()
             total_loss = 0.0
-            
+
             total = 0
             correct = 0
             for x_batch, y_batch in train_loader:
@@ -145,18 +150,34 @@ class MPL1_512:
             # Get current training loss
             # Evaluate test loss at each epoch if test data is provided
             current_test_loss = np.nan
+            current_test_acc = np.nan
             if test_loader is not None:
-                current_test_loss, _ = self._evaluate_loader(test_loader)
+                current_test_loss, current_test_acc = self._evaluate_loader(test_loader)
 
             # Store history
             all_history["loss"].append(current_train_loss)
             all_history["accuracy"].append(current_train_acc)
             all_history["test_loss"].append(current_test_loss)
+            all_history["test_accuracy"].append(current_test_acc)
+            all_history["test_error"].append(
+                np.nan if np.isnan(current_test_acc) else 1 - current_test_acc
+            )
 
             if verbose:
-                print(
-                    f"Epoch {epoch + 1}/{epochs} - loss: {current_train_loss:.4f} - accuracy: {current_train_acc:.4f}"
-                )
+                if test_loader is not None:
+                    print(
+                        f"Epoch {epoch + 1}/{epochs} - "
+                        f"train_loss: {current_train_loss:.4f} - "
+                        f"train_acc: {current_train_acc:.4f} - "
+                        f"test_loss: {current_test_loss:.4f} - "
+                        f"test_acc: {current_test_acc:.4f}"
+                    )
+                else:
+                    print(
+                        f"Epoch {epoch + 1}/{epochs} - "
+                        f"train_loss: {current_train_loss:.4f} - "
+                        f"train_acc: {current_train_acc:.4f}"
+                    )
 
             # Check for overfit: training loss below threshold
             if current_train_loss < overfit_threshold:
@@ -187,7 +208,21 @@ class MPL1_512:
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(f"MPL1_512_train_test_loss_{label_corruption_level:.1f}.png")
+        plt.savefig(f"alexnet_train_test_loss_{label_corruption_level:.1f}.png")
+        plt.close()
+
+        # Plot test error against epochs.
+        plt.figure(figsize=(8, 5))
+        plt.plot(
+            epoch_indices, all_history["test_error"], color="red", label="Test Error"
+        )
+        plt.title("Test Error vs Epochs")
+        plt.xlabel("Epochs")
+        plt.ylabel("Error")
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f"alexnet_test_error_epochs_{label_corruption_level:.1f}.png")
         plt.close()
 
         if epochs_to_overfit is None:
@@ -209,7 +244,9 @@ class MPL1_512:
         return self.history, final_test_error, epochs_to_overfit
 
     def evaluate(self, x_test, y_test):
-        test_loader = self._build_dataloader(x_test, y_test, batch_size=256, shuffle=False)
+        test_loader = self._build_dataloader(
+            x_test, y_test, batch_size=256, shuffle=False
+        )
         test_loss, test_acc = self._evaluate_loader(test_loader)
         test_error = 1 - test_acc
         print(
@@ -233,25 +270,33 @@ if __name__ == "__main__":
     y_train = np.array(train_dataset.targets, dtype=np.int64)
     y_test = np.array(test_dataset.targets, dtype=np.int64)
 
-    p = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    # Normalize with training-set statistics only, then reuse for test data.
+    train_mean = x_train.mean(axis=(0, 1, 2), keepdims=True)
+    train_var = x_train.var(axis=(0, 1, 2), keepdims=True)
+    x_train = (x_train - train_mean) / np.sqrt(train_var + 1e-7)
+    x_test = (x_test - train_mean) / np.sqrt(train_var + 1e-7)
+
+    # keep_fraction is the fraction of labels left unchanged.
+    keep_fractions = [1.0]
     seed = 25292
     test_errors = []
     time_to_overfit = []
-    for k in p:
-        """p is the fraction that stays the same and 1-p is the fraction that gets randomized"""
-        print(f"Randomization degree: {k}")
-        y_train_randomized = randomize_labels(y_train.copy(),1-k, seed)
-        y_test_randomized = randomize_labels(y_test.copy(), 1-k, seed)
-        model = MPL1_512(num_classes=NUM_CLASSES)
+    for keep_fraction in keep_fractions:
+        corruption_level = 1 - keep_fraction
+        print(
+            f"Keep fraction: {keep_fraction:.1f} | Corruption level: {corruption_level:.1f}"
+        )
+        y_train_randomized = randomize_labels(y_train.copy(), corruption_level, seed)
+        model = AlexNetTrainer(num_classes=NUM_CLASSES)
 
         _, final_test_error, epochs_to_overfit_val = model.train(
             x_train,
             y_train_randomized,
             x_test,
-            y_test_randomized,
-            epochs=1000,
+            y_test,
+            epochs=10,
             batch_size=256,
-            label_corruption_level=k,
+            label_corruption_level=corruption_level,
         )
         test_errors.append(final_test_error)
         time_to_overfit.append(epochs_to_overfit_val)
@@ -259,4 +304,3 @@ if __name__ == "__main__":
         print(f"  Epochs to overfit: {epochs_to_overfit_val}")
 
     # Plot test error vs randomization
-    

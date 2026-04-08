@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+implementing_double_descent/Randomization/palak/dd-impl/alexnet_cifar10_corruption_0.0.pth
+implementing_double_descent/Randomization/palak/dd-impl/alexnet_cifar10_corruption_0.1.pth
+implementing_double_descent/Randomization/palak/dd-impl/alexnet_cifar10_corruption_0.2.pth
+implementing_double_descent/Randomization/palak/dd-impl/alexnet_cifar10_corruption_0.3.pth
+implementing_double_descent/Randomization/palak/dd-impl/alexnet_cifar10_corruption_0.4.pth
