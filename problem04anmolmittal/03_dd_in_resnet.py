@@ -182,7 +182,6 @@ def plot(widths, results):
     plt.figure()
 
     for name, (tl, vl, _, _) in results.items():
-        plt.plot(widths, tl, 'o--', label=f"{name} - Train")
         plt.plot(widths, vl, 'o-', label=f"{name} - Test")
 
     plt.title("Train & Test Loss vs Width")
