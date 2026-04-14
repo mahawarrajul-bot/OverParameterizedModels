@@ -22,9 +22,7 @@ from torchvision.datasets import CIFAR10
 from torchvision.models import resnet18
 from torch.utils.data import DataLoader, Subset
 
-# =====================
-# Seeding (UNCHANGED)
-# =====================
+
 def seed_everything(seed=42):
     random.seed(seed)
     np.random.seed(seed)
@@ -48,9 +46,6 @@ def seed_worker(worker_id):
 g = torch.Generator()
 g.manual_seed(42)
 
-# =====================
-# Transforms
-# =====================
 transform_aug = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
@@ -61,9 +56,7 @@ transform_no_aug = transforms.Compose([
     transforms.ToTensor()
 ])
 
-# =====================
-# Dataset
-# =====================
+
 train_aug_dataset = CIFAR10(root='./data', train=True, download=True, transform=transform_aug)
 train_noaug_dataset = CIFAR10(root='./data', train=True, download=True, transform=transform_no_aug)
 
@@ -89,9 +82,7 @@ valloader = DataLoader(val_dataset, batch_size=128, shuffle=False,
 
 print("Training samples:", subset_size)
 
-# =====================
-# Model (ResNet18 + optional dropout)
-# =====================
+
 class ResNetWithDropout(nn.Module):
     def __init__(self, use_dropout=True):
         super().__init__()
@@ -124,9 +115,7 @@ class ResNetWithDropout(nn.Module):
 def create_model(use_dropout=True):
     return ResNetWithDropout(use_dropout).to(device)
 
-# =====================
-# Accuracy
-# =====================
+
 def accuracy(model, loader):
     model.eval()
     correct = 0
@@ -145,9 +134,7 @@ def accuracy(model, loader):
 
     return correct/total
 
-# =====================
-# Training loop
-# =====================
+
 def run_experiment(loader, weight_decay, dropout, max_steps=1500):
 
     model = create_model(dropout)
@@ -194,9 +181,7 @@ def run_experiment(loader, weight_decay, dropout, max_steps=1500):
 
     return steps, train_acc, val_acc
 
-# =====================
-# Experiments
-# =====================
+
 print("Experiment 1: augmentation + wd + dropout")
 s1,tr1,val1 = run_experiment(trainloader_aug,1e-4,True)
 
@@ -206,9 +191,7 @@ s2,tr2,val2 = run_experiment(trainloader_noaug,1e-4,False)
 print("Experiment 3: no regularization")
 s3,tr3,val3 = run_experiment(trainloader_noaug,0,False)
 
-# =====================
-# Plot
-# =====================
+
 plt.figure(figsize=(8,6))
 
 plt.plot(s1,val1,'o-',label='test(w aug, wd, dropout)')
