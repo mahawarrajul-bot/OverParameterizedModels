@@ -15,9 +15,7 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
 
-# ======================
-# Setup
-# ======================
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(0)
 
@@ -26,9 +24,7 @@ depths = [2, 4, 6]
 epochs = 20
 batch_size = 128
 
-# ======================
-# Data
-# ======================
+
 transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5),
@@ -51,9 +47,7 @@ testset = torchvision.datasets.CIFAR10(
 )
 testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False)
 
-# ======================
-# Activation
-# ======================
+
 def get_activation(name):
     return {
         "relu": nn.ReLU(),
@@ -62,9 +56,7 @@ def get_activation(name):
         "gelu": nn.GELU()
     }[name]
 
-# ======================
-# CNN Model
-# ======================
+
 class CNN(nn.Module):
     def __init__(self, depth, activation):
         super().__init__()
@@ -118,9 +110,7 @@ class CNN(nn.Module):
         x = x.view(x.size(0), -1)
         return self.fc(x)
 
-# ======================
-# Train Function
-# ======================
+
 def train(model, loader, optimizer, criterion):
     model.train()
     correct, total = 0, 0
@@ -140,9 +130,7 @@ def train(model, loader, optimizer, criterion):
 
     return correct / total
 
-# ======================
-# Evaluation + Margins
-# ======================
+
 def evaluate(model, loader):
     model.eval()
     correct, total = 0, 0
@@ -169,9 +157,7 @@ def evaluate(model, loader):
 
     return correct / total, margins
 
-# ======================
-# Experiment Loop
-# ======================
+
 results = {}
 
 for depth in depths:
@@ -207,9 +193,7 @@ for depth in depths:
             "test_margins": test_margins
         }
 
-# ======================
-# PLOTS
-# ======================
+
 
 # Accuracy curves
 for depth in depths:
