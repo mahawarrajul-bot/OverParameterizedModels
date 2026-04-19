@@ -1,3 +1,0 @@
-Alexnet
-Inception
-MLP
