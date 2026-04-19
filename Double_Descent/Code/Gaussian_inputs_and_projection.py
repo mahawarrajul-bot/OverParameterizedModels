@@ -10,49 +10,39 @@ Original file is located at
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ----------------------------
-# Setup
-# ----------------------------
-n      = 200        # number of observations
-sigma  = 1.0        # noise std
-norm2  = 4.0        # ||theta*||^2 (fixed so theory matches cleanly)
-n_runs = 10         # average over multiple draws to reduce noise near d=n
+
+n      = 200       
+sigma  = 1.0       
+norm2  = 4.0      
+n_runs = 10         
 
 d_values = list(range(10, 600, 5))
 errors   = []
 
-# ----------------------------
-# Main Experiment Loop
-# ----------------------------
+
 for d in d_values:
     run_errors = []
 
     for _ in range(n_runs):
-        # Fresh self-consistent problem for this d
+
         theta_star = np.random.randn(d)
         theta_star = theta_star / np.linalg.norm(theta_star) * np.sqrt(norm2)
 
-        X   = np.random.randn(n, d)           # design matrix  (n x d)
-        eps = sigma * np.random.randn(n)       # noise
+        X   = np.random.randn(n, d)          
+        eps = sigma * np.random.randn(n)      
         y   = X @ theta_star + eps
 
-        # Minimum-norm estimator (textbook section 12.1.1)
-        if d <= n - 2:                         # underparameterized: OLS
+        if d <= n - 2:                       
             theta_hat = np.linalg.solve(X.T @ X, X.T @ y)
-        else:                                  # overparameterized: min-norm via kernel trick
-            K = X @ X.T                        # (n x n) kernel matrix
+        else:                        
+            K = X @ X.T                       
             theta_hat = X.T @ np.linalg.solve(K, y)
 
-        # Excess risk R(theta_hat) = ||theta_hat - theta*||^2  (since Sigma = I)
         run_errors.append(np.sum((theta_hat - theta_star) ** 2))
 
     errors.append(np.mean(run_errors))
 
-# ----------------------------
-# Theoretical Curves
-# Eq (12.17): d <= n-2  =>  sigma^2 * d / (n - d - 1)
-# Eq (12.18): d >= n+2  =>  sigma^2 * n / (d - n - 1) + ||theta*||^2 * (d - n) / d
-# ----------------------------
+
 theory = []
 for d in d_values:
     if d <= n - 2:
@@ -60,12 +50,9 @@ for d in d_values:
     elif d >= n + 2:
         val = (sigma**2 * n / (d - n - 1)) + norm2 * (d - n) / d
     else:
-        val = np.nan    # blow-up zone around d = n, skip
+        val = np.nan    
     theory.append(val)
 
-# ----------------------------
-# Plot
-# ----------------------------
 plt.figure(figsize=(9, 5))
 
 plt.plot(d_values, errors,
@@ -87,41 +74,33 @@ plt.show()
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ----------------------------
-# Setup
-# ----------------------------
-n      = 200        # number of training observations
-n_test = 2000       # test set size
-sigma  = 1.0        # noise std
-norm2  = 4.0        # ||theta*||^2
-n_runs = 10         # average over multiple draws to reduce noise near d=n
+
+n      = 200      
+n_test = 2000     
+sigma  = 1.0    
+norm2  = 4.0   
+n_runs = 10         
 
 d_values = list(range(10, 600, 5))
 test_errors = []
 
-# ----------------------------
-# Main Experiment Loop
-# ----------------------------
 for d in d_values:
     run_errors = []
 
     for _ in range(n_runs):
-        # Fresh self-consistent problem for this d
+
         theta_star = np.random.randn(d)
         theta_star = theta_star / np.linalg.norm(theta_star) * np.sqrt(norm2)
 
-        # Training data
         X_train = np.random.randn(n, d)
         y_train = X_train @ theta_star + sigma * np.random.randn(n)
 
-        # Minimum-norm estimator
-        if d <= n - 2:                          # underparameterized: OLS
+        if d <= n - 2:                        
             theta_hat = np.linalg.solve(X_train.T @ X_train, X_train.T @ y_train)
-        else:                                   # overparameterized: min-norm
+        else:                                 
             K = X_train @ X_train.T
             theta_hat = X_train.T @ np.linalg.solve(K, y_train)
 
-        # Test error (MSE on fresh test set)
         X_test = np.random.randn(n_test, d)
         y_test = X_test @ theta_star + sigma * np.random.randn(n_test)
         y_pred = X_test @ theta_hat
