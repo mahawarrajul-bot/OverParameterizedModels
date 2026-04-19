@@ -19,7 +19,7 @@ X, y = make_classification(
     flip_y=0,
 )
 
-#convert labels to {-1,1}
+#converting labels to {-1,1}
 y = 2 * y - 1
 
 X = torch.tensor(X, dtype=torch.float32)
